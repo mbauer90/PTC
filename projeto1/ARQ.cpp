@@ -18,6 +18,7 @@ void ARQ::envia(char * buffer, int bytes) {
     //Enquadramento enquadra(porta, max_bytes);
     Evento e;
     
+
         if(bytes<min_bytes){
             int tam=min_bytes - bytes;
             for(int i=0; i<tam; i++){
@@ -26,18 +27,28 @@ void ARQ::envia(char * buffer, int bytes) {
             bytes = 8;
         }
     
+
     e.tipo = Payload;
     e.ptr = buffer;
     e.num_bytes = bytes;
-
+    
     handle(e);
     
-    int bytes_enq;
-    bytes_enq = enquadra.recebe(buffer);
-    e.num_bytes = bytes_enq;
-    e.quadro_recebido = buffer;
+    bool teste=true;
+    while(teste){
+        int bytes_enq;
+        memset(buffer, '\0', sizeof(buffer));
 
-    handle(e);
+        bytes_enq = enquadra.recebe(buffer);
+        //e.num_bytes = bytes_enq;
+        e.ptr = buffer;
+
+        //handle(e);
+     
+        if(handle(e)){
+            teste = false;
+        }
+    }
 
 }
 
@@ -56,7 +67,8 @@ int ARQ::recebe(char * buffer) {
 
         if(handle(e)){
            retiraCabecalho(buffer,bytes_enq); 
-           return bytes_enq-1;     
+           bytes_enq--;
+           return bytes_enq;     
         }
 
     }
@@ -75,7 +87,9 @@ bool ARQ::handle(Evento e) {
         case EST0: // estado 0
             if (e.tipo == Payload) {
                 mudaPayload(e.ptr, e.num_bytes, N);
-                enquadra.envia(e.ptr, e.num_bytes+1);
+                e.num_bytes++;
+                memcpy(buffer_reenvio, e.ptr, e.num_bytes);
+                enquadra.envia(e.ptr, e.num_bytes);
                 estado = EST1;
             } else if (e.tipo == Quadro) {
                 // RESPONDER ACK COM NUMERO DE SEQUENCIA RECEBIDO
@@ -97,13 +111,20 @@ bool ARQ::handle(Evento e) {
 
         case EST1: // estado 1
             if (e.tipo == Payload) {
-                if (AckOuMensagem(e.quadro_recebido[0])) {//verifica se é ACK
-                    if (returnNumSeq(e.quadro_recebido[0]) == N) {// verifica se Numero de sequencia é correto
+                if (AckOuMensagem(e.ptr[0])) {//verifica se é ACK
+                    if (returnNumSeq(e.ptr[0]) == N) {// verifica se Numero de sequencia é correto
                         cout << "ACK " << N << endl;
                         N = not(N);
                         estado = EST0;
+                        return true;
                     } else {
-                        enquadra.envia(e.ptr, e.num_bytes+1);
+                        cout << "REENVIANDO" <<endl;
+                        e.num_bytes++;
+                        memset(e.ptr, '\0', sizeof(e.ptr));
+                        memcpy(e.ptr, buffer_reenvio, e.num_bytes);
+                        enquadra.envia(e.ptr, e.num_bytes);
+                    
+                        return false;
                     }
                     return false;
                 }
@@ -143,7 +164,7 @@ void ARQ::retiraCabecalho(char * buffer,int bytes) {
 }
 
 void ARQ::mudaPayload(char * buffer, int bytes, bool N) {
-
+     memset(buffer_arq, '\0', sizeof(buffer_arq));
     if (N == 0) {
         buffer_arq[0] = 0x00;
     } else {
@@ -158,6 +179,7 @@ void ARQ::mudaPayload(char * buffer, int bytes, bool N) {
 }
 
 void ARQ::criaACK(char byte) {
+    memset(buff, '\0', sizeof(buff));
     if (returnNumSeq(byte)) {
         buff[0] = 0x03;
     } else {
@@ -180,5 +202,20 @@ bool ARQ::returnNumSeq(char byte) {
     } else {
         return false;
     }
+}
+
+void ARQ::imprimeHexa(char * buffer, int len) {
+   int m = 0, line = 0;
+ 
+    while (m < len) {
+        printf("%02X: ", line*16);
+ 
+        for (int n=0; n < 16 and m < len; n++, m++) {
+            int x = (unsigned char)buffer[m];
+            printf("%02X ", x);
+        }
+        puts("");
+        line++;
+    }        
 }
 

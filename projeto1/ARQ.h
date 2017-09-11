@@ -17,6 +17,7 @@ public:
 private:
     char buff[10];
     char buffer_arq[4096]; // quadros no maximo de 4 kB (hardcoded)
+    char buffer_reenvio[4096]; // quadros no maximo de 4 kB (hardcoded)
     enum Estados {EST0,EST1};
     enum TipoEvento {Timeout,Quadro,Payload};
     int estado; // estado atual da MEF
@@ -37,7 +38,7 @@ private:
     bool AckOuMensagem(char byte);
     bool returnNumSeq(char byte);
     void criaACK(char byte);
-
+    void imprimeHexa(char * buffer, int len);
 };
 
 #endif /* ARQ_H */
