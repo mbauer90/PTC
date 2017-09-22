@@ -55,8 +55,16 @@ void ARQ::envia(char * buffer, int bytes) {
 int ARQ::recebe(char * buffer) {
     //Enquadramento enquadra(porta, max_bytes);
     Evento e;
+    S_Quadro quad;
+
     int bytes_enq;
     
+    if(!recebidos.empty()){
+        quad = recebidos.front();
+        recebidos.pop();
+        buffer = quad.ptr;
+        return quad.len;
+    }
     
     while (true) {
         bytes_enq = enquadra.recebe(buffer);
@@ -70,7 +78,6 @@ int ARQ::recebe(char * buffer) {
            bytes_enq--;
            return bytes_enq;     
         }
-
     }
 }
 
@@ -126,10 +133,25 @@ bool ARQ::handle(Evento e) {
                     
                         return false;
                     }
-                    return false;
+                        return false;
+                }else{  // Caso receba dados quando esta esperando ack
+                    if (M == returnNumSeq(e.ptr[0])) {
+                        criaACK(e.ptr[0]);
+                        enquadra.envia(buff, 1);
+                    } else {
+                        S_Quadro q;
+                        q.ptr = e.ptr;
+                        q.len = e.num_bytes;
+                        
+                        recebidos.push(q);
+                        
+                        criaACK(e.ptr[0]);
+                        enquadra.envia(buff, 1);
+                        M = returnNumSeq(e.ptr[0]);
+                    }
+                    return false;   
                 }
                 return false;
-
 
             } else if (e.tipo == Quadro) {
                 // RESPONDER ACK COM NUMERO DE SEQUENCIA RECEBIDO
@@ -180,6 +202,7 @@ void ARQ::mudaPayload(char * buffer, int bytes, bool N) {
 
 void ARQ::criaACK(char byte) {
     memset(buff, '\0', sizeof(buff));
+    
     if (returnNumSeq(byte)) {
         buff[0] = 0x03;
     } else {

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include "Serial.h"
 #include "Enquadramento.h"
+#include <queue>
 
 class ARQ {
 public:
@@ -24,6 +25,13 @@ private:
     int min_bytes; // tamanhos mínimo e máximo de quadro
     bool N,M;
     Enquadramento & enquadra;
+    
+    struct S_Quadro {
+        char * ptr;
+        int len;
+    };
+    
+    std::queue<S_Quadro> recebidos;
            
     struct Evento{
         TipoEvento tipo;
