@@ -65,6 +65,7 @@ class Enquadramento {
   //char buffer[4096]; // quadros no maximo de 4 kB (hardcoded)
   char buffer_maq[4096];
   enum Estados {Ocioso, RX, ESC};
+  bool timeout_bytes;
   
   // bytes recebidos pela MEF até o momento  
   int n_bytes; 

@@ -1,12 +1,18 @@
 #include <string>
 #include <iostream>
 #include <memory.h>
-
+#include <queue>
 #include "ARQ.h"
 
 using namespace std;
 
-ARQ::ARQ(Enquadramento & enq, int bytes_min): enquadra(enq){
+//struct S_Quadro {
+//    char * q_ptr;
+//    int q_len;
+//};
+//std::queue<S_Quadro> recebido;
+
+ARQ::ARQ(Enquadramento & enq, int bytes_min) : enquadra(enq) {
     N = 0;
     M = 1;
     min_bytes = bytes_min;
@@ -14,38 +20,43 @@ ARQ::ARQ(Enquadramento & enq, int bytes_min): enquadra(enq){
 
 void ARQ::envia(char * buffer, int bytes) {
     char preenc;
-    preenc=0x00;
+    preenc = 0x00;
     //Enquadramento enquadra(porta, max_bytes);
     Evento e;
-    
 
-        if(bytes<min_bytes){
-            int tam=min_bytes - bytes;
-            for(int i=0; i<tam; i++){
-                buffer[bytes+i] = preenc;
-            }
-            bytes = 8;
+
+    if (bytes < min_bytes) {
+        int tam = min_bytes - bytes;
+        for (int i = 0; i < tam; i++) {
+            buffer[bytes + i] = preenc;
         }
-    
+        bytes = 8;
+    }
+
 
     e.tipo = Payload;
     e.ptr = buffer;
     e.num_bytes = bytes;
-    
+
     handle(e);
-    
-    bool teste=true;
-    while(teste){
+
+    bool teste = true;
+    while (teste) {
         int bytes_enq;
-        memset(buffer, '\0', sizeof(buffer));
+        memset(buffer, '\0', sizeof (buffer));
 
         bytes_enq = enquadra.recebe(buffer);
-        //e.num_bytes = bytes_enq;
+        if (bytes_enq == 0) {
+            e.tipo = Timeout;
+        }else{
+            e.tipo = Payload;
+        }
+        // e.num_bytes = bytes_enq;
         e.ptr = buffer;
 
         //handle(e);
-     
-        if(handle(e)){
+
+        if (handle(e)) {
             teste = false;
         }
     }
@@ -55,28 +66,31 @@ void ARQ::envia(char * buffer, int bytes) {
 int ARQ::recebe(char * buffer) {
     //Enquadramento enquadra(porta, max_bytes);
     Evento e;
-    S_Quadro quad;
+//    S_Quadro quad;
 
     int bytes_enq;
-    
-    if(!recebidos.empty()){
-        quad = recebidos.front();
-        recebidos.pop();
-        buffer = quad.ptr;
-        return quad.len;
-    }
-    
+
+//    if (!recebido.empty()) {
+//        quad = recebido.front();
+//        recebido.pop();
+//        buffer = quad.q_ptr;
+//        return quad.q_len;
+//    }
+
     while (true) {
         bytes_enq = enquadra.recebe(buffer);
+        if (bytes_enq==0){
+           e.tipo = Timeout;
+        }else{
+            e.tipo = Quadro;
+            e.ptr = buffer;
+            e.num_bytes = bytes_enq;
+        }
 
-        e.tipo = Quadro;
-        e.ptr = buffer;
-        e.num_bytes = bytes_enq;
-
-        if(handle(e)){
-           retiraCabecalho(buffer,bytes_enq); 
-           bytes_enq--;
-           return bytes_enq;     
+        if (handle(e)) {
+            retiraCabecalho(buffer, bytes_enq);
+            bytes_enq--;
+            return bytes_enq;
         }
     }
 }
@@ -87,6 +101,7 @@ int ARQ::recebe(char * buffer) {
 //0x01 = mensagem/sequencia um
 //0x02 = ack/sequencia zero
 //0x03 =  ack/sequencia um
+
 bool ARQ::handle(Evento e) {
     //Enquadramento enquadra(porta, max_bytes);
 
@@ -101,8 +116,8 @@ bool ARQ::handle(Evento e) {
             } else if (e.tipo == Quadro) {
                 // RESPONDER ACK COM NUMERO DE SEQUENCIA RECEBIDO
                 if (!AckOuMensagem(e.ptr[0])) {//verifica se é quadro de mensagem
-
                     if (M == returnNumSeq(e.ptr[0])) {
+
                         criaACK(e.ptr[0]);
                         enquadra.envia(buff, 1);
                         return false;
@@ -113,7 +128,12 @@ bool ARQ::handle(Evento e) {
                         return true;
                     }
                 }
+                return false;
+            }else if (e.tipo== Timeout){
+                return false;
             }
+            
+            
             break;
 
         case EST1: // estado 1
@@ -125,32 +145,43 @@ bool ARQ::handle(Evento e) {
                         estado = EST0;
                         return true;
                     } else {
-                        cout << "REENVIANDO" <<endl;
+                        cout << "REENVIANDO POR ACK ERRADO" << endl;
                         e.num_bytes++;
-                        memset(e.ptr, '\0', sizeof(e.ptr));
+                        memset(e.ptr, '\0', sizeof (e.ptr));
                         memcpy(e.ptr, buffer_reenvio, e.num_bytes);
                         enquadra.envia(e.ptr, e.num_bytes);
-                    
+
                         return false;
                     }
-                        return false;
-                }else{  // Caso receba dados quando esta esperando ack
-                    if (M == returnNumSeq(e.ptr[0])) {
-                        criaACK(e.ptr[0]);
-                        enquadra.envia(buff, 1);
-                    } else {
-                        S_Quadro q;
-                        q.ptr = e.ptr;
-                        q.len = e.num_bytes;
-                        
-                        recebidos.push(q);
-                        
-                        criaACK(e.ptr[0]);
-                        enquadra.envia(buff, 1);
-                        M = returnNumSeq(e.ptr[0]);
-                    }
-                    return false;   
+                    return false;
                 }
+//                else { // Caso receba dados quando esta esperando ack
+//                    if (M == returnNumSeq(e.ptr[0])) {
+//                        criaACK(e.ptr[0]);
+//                        enquadra.envia(buff, 1);
+//                    } else {
+//                        S_Quadro q;
+//                        q.q_ptr = e.ptr;
+//                        q.q_len = e.num_bytes;
+//
+//                        recebido.push(q);
+//
+//                        criaACK(e.ptr[0]);
+//                        enquadra.envia(buff, 1);
+//                        M = returnNumSeq(e.ptr[0]);
+//                    }
+//                    return false;
+//                }
+                return false;
+
+            } else if (e.tipo == Timeout) {
+
+                cout << "REENVIANDO POR TIMEOUT" << endl;
+                e.num_bytes++;
+                memset(e.ptr, '\0', sizeof (e.ptr));
+                memcpy(e.ptr, buffer_reenvio, e.num_bytes);
+                enquadra.envia(e.ptr, e.num_bytes);
+
                 return false;
 
             } else if (e.tipo == Quadro) {
@@ -175,18 +206,18 @@ bool ARQ::handle(Evento e) {
     }
 }
 
-void ARQ::retiraCabecalho(char * buffer,int bytes) {
-    memset(buffer_arq, '\0', sizeof(buffer_arq));
-    
-    for (int i = 0; i < bytes-1; i++) {
-        buffer_arq[i] = buffer[i+1];
+void ARQ::retiraCabecalho(char * buffer, int bytes) {
+    memset(buffer_arq, '\0', sizeof (buffer_arq));
+
+    for (int i = 0; i < bytes - 1; i++) {
+        buffer_arq[i] = buffer[i + 1];
     }
 
-    memcpy(buffer, buffer_arq, bytes-1);
+    memcpy(buffer, buffer_arq, bytes - 1);
 }
 
 void ARQ::mudaPayload(char * buffer, int bytes, bool N) {
-     memset(buffer_arq, '\0', sizeof(buffer_arq));
+    memset(buffer_arq, '\0', sizeof (buffer_arq));
     if (N == 0) {
         buffer_arq[0] = 0x00;
     } else {
@@ -201,8 +232,8 @@ void ARQ::mudaPayload(char * buffer, int bytes, bool N) {
 }
 
 void ARQ::criaACK(char byte) {
-    memset(buff, '\0', sizeof(buff));
-    
+    memset(buff, '\0', sizeof (buff));
+
     if (returnNumSeq(byte)) {
         buff[0] = 0x03;
     } else {
@@ -228,17 +259,16 @@ bool ARQ::returnNumSeq(char byte) {
 }
 
 void ARQ::imprimeHexa(char * buffer, int len) {
-   int m = 0, line = 0;
- 
+    int m = 0, line = 0;
+
     while (m < len) {
-        printf("%02X: ", line*16);
- 
-        for (int n=0; n < 16 and m < len; n++, m++) {
-            int x = (unsigned char)buffer[m];
+        printf("%02X: ", line * 16);
+
+        for (int n = 0; n < 16 and m < len; n++, m++) {
+            int x = (unsigned char) buffer[m];
             printf("%02X ", x);
         }
         puts("");
         line++;
-    }        
+    }
 }
-
