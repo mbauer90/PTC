@@ -6,11 +6,11 @@
 
 using namespace std;
 
-//struct S_Quadro {
-//    char * q_ptr;
-//    int q_len;
-//};
-//std::queue<S_Quadro> recebido;
+struct S_Quadro {
+    char * q_ptr;
+    int q_len;
+};
+std::queue<S_Quadro> recebido;
 
 ARQ::ARQ(Enquadramento & enq, int bytes_min) : enquadra(enq) {
     N = 0;
@@ -144,7 +144,7 @@ bool ARQ::handle(Evento e) {
                     if (returnNumSeq(e.ptr[0]) == N) {// verifica se Numero de sequencia é correto
                         cout << "ACK " << N << endl;
                         N = not(N);
-                        estado = EST0;
+                        estado = EST2;
                         return true;
                     } else {
                         cout << "REENVIANDO POR ACK ERRADO" << endl;
@@ -152,7 +152,7 @@ bool ARQ::handle(Evento e) {
                         memset(e.ptr, '\0', sizeof (e.ptr));
                         memcpy(e.ptr, buffer_reenvio, e.num_bytes);
                         enquadra.envia(e.ptr, e.num_bytes);
-
+                        estado = EST3;
                         return false;
                     }
                     return false;
@@ -183,7 +183,7 @@ bool ARQ::handle(Evento e) {
                 memset(e.ptr, '\0', sizeof (e.ptr));
                 memcpy(e.ptr, buffer_reenvio, e.num_bytes);
                 enquadra.envia(e.ptr, e.num_bytes);
-
+                estado = EST3;
                 return false;
 
             } else if (e.tipo == Quadro) {
@@ -205,6 +205,19 @@ bool ARQ::handle(Evento e) {
             }
 
             break;
+            
+             case EST2:
+                 
+                 
+                 estado = EST0;
+                 handle(e);
+                 
+             break;  
+
+            case EST3:
+                 estado = EST1;
+                 handle(e);
+             break;
     }
 }
 

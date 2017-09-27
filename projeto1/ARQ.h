@@ -19,7 +19,7 @@ private:
     char buff[10];
     char buffer_arq[4096]; // quadros no maximo de 4 kB (hardcoded)
     char buffer_reenvio[4096]; // quadros no maximo de 4 kB (hardcoded)
-    enum Estados {EST0,EST1};
+    enum Estados {EST0,EST1,EST2,EST3};
     enum TipoEvento {Timeout,Quadro,Payload};
     int estado; // estado atual da MEF
     int min_bytes; // tamanhos mínimo e máximo de quadro
