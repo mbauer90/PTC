@@ -92,6 +92,8 @@ int ARQ::recebe(char * buffer) {
             bytes_enq--;
             return bytes_enq;
         }
+        return 0;
+        
     }
 }
 

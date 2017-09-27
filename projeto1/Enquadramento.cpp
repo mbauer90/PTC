@@ -89,9 +89,9 @@ int Enquadramento::recebe(char * buffer) {
             if (n2 > 0) {
                 tam_byte = porta.read(&byte, 1, true);
             } else {
-                cout << "Entrou timeout entre bytes" << endl;
+                cout << "Timeout entre bytes" << endl;
                 tam_byte = 0;
-                cout << tam_byte << endl;
+               // cout << tam_byte << endl;
                 timeout_bytes = true;
                 //return 0;
             }
@@ -115,7 +115,7 @@ int Enquadramento::recebe(char * buffer) {
         }
 
     } else {
-        cout << "Timeout !!!" << endl;
+        cout << "Timeout" << endl;
         return 0;
     }
 
