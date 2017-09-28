@@ -56,68 +56,58 @@ void Enquadramento::envia(char * buffer, int bytes) {
     }
 }
 
-int Enquadramento::recebe(char * buffer) {
+char Enquadramento::recv_byte(int tout_ms) {
     char byte;
-    timeout_bytes = false;
-    int tam_byte;
-    int fd = porta.get();
-
-    // faz com que fd opere em modo não-bloqueante
-    int op = fcntl(fd, F_GETFL);
-    fcntl(fd, F_SETFL, op | O_NONBLOCK);
-
     // cria um conjunto de descritores
     fd_set r;
-
     // inicia o conjunto de descritores, e nele
     // acrescenta fd
     FD_ZERO(&r);
-    FD_SET(fd, &r);
+    FD_SET(porta.get(), &r);
 
-    timeval timeout = {5, 0};
-    int n = select(fd + 1, &r, NULL, NULL, &timeout);
-
-    timeval timeout2 = {1, 0};
-
+    timeval timeout = {tout_ms / 1000, (tout_ms % 1000)*1000};
+    int n = select(porta.get() + 1, &r, NULL, NULL, &timeout);
 
     if (n > 0) { // algo foi digitado dentro do prazo 
-
-        while (true) {
-            int n2 = select(fd + 1, &r, NULL, NULL, &timeout2);
-            // cout<<"N2: "<< n2 <<endl;
-            if (n2 > 0) {
-                tam_byte = porta.read(&byte, 1, true);
-            } else {
-                cout << "Timeout entre bytes" << endl;
-                tam_byte = 0;
-               // cout << tam_byte << endl;
-                timeout_bytes = true;
-                //return 0;
-            }
-
-            if(tam_byte > 0){
-                if (handle(byte)) {
-                buffer_maq[cont_buffer] = '\0';
-                buffer_maq[cont_buffer - 1] = '\0';
-                cont_buffer = cont_buffer - 2;
-
-                memcpy(buffer, buffer_maq, cont_buffer);
-
-                return cont_buffer;
-                } 
-            }else{
-                //memset(buffer, '\0', sizeof (buffer));
-                memset(buffer_maq, '\0', sizeof (buffer_maq));
-                return 0;
-            }
-
-        }
-
+        porta.read(&byte, 1, true);
+        return byte;
     } else {
         cout << "Timeout" << endl;
-        return 0;
+        throw -1;
+    }
+}
+
+// tout: timeout em segundos
+
+int Enquadramento::recebe(char * buffer, int tout) {
+    char byte;
+    timeout_bytes = false;
+    timeout_ms = tout * 1000;
+    int tam_byte;
+
+    try {
+        byte = recv_byte(tout * 1000);
+        handle(byte);
+    } catch (...) {
+        return 0; // timeout
     }
 
+    while (true) {
+        try {
+            byte = recv_byte(1000);
+        } catch (...) {
+            return 0; // timeout
+        }
+        if (handle(byte)) {
+            buffer_maq[cont_buffer] = '\0';
+            buffer_maq[cont_buffer - 1] = '\0';
+            cont_buffer = cont_buffer - 2;
+
+            memcpy(buffer, buffer_maq, cont_buffer);
+
+            return cont_buffer;
+        }
+    }
 }
 
 bool Enquadramento::handle(char byte) {
@@ -126,7 +116,7 @@ bool Enquadramento::handle(char byte) {
 
             cont_buffer = 0;
             memset(buffer_maq, '\0', sizeof (buffer_maq));
-            
+
             if (byte == 0x7e) {
                 estado = RX; // muda para RX
             }
@@ -141,12 +131,12 @@ bool Enquadramento::handle(char byte) {
                 return false;
             } else if (((byte == 0x7e) and (cont_buffer != 0)) or (timeout_bytes)) { //PRECISA COLOCAR TIMEOUT
                 estado = Ocioso;
-                
-                if(timeout_bytes){
+
+                if (timeout_bytes) {
                     timeout_bytes = false;
                     return false;
                 }
-                
+
                 //if ((cont_buffer<min_bytes) | (!check_crc(buffer_maq,cont_buffer))){
                 if ((!check_crc(buffer_maq, cont_buffer))) {
                     return false;

@@ -55,7 +55,7 @@ class Enquadramento {
  
   // espera e recebe um quadro, armazenando-o em buffer
   // retorna o tamanho do quadro recebido
-  int recebe(char * buffer);
+  int recebe(char * buffer, int tout);
  
  private:
   //int min_bytes;
@@ -66,6 +66,7 @@ class Enquadramento {
   char buffer_maq[4096];
   enum Estados {Ocioso, RX, ESC};
   bool timeout_bytes;
+  int timeout_ms; // timeout em milissegundos
   
   // bytes recebidos pela MEF até o momento  
   int n_bytes; 
@@ -76,6 +77,8 @@ class Enquadramento {
   // aqui se implementa a máquina de estados de recepção
   // retorna true se reconheceu um quadro completo
   bool handle(char byte);
+  
+  char recv_byte(int tout_ms);
  
   // verifica o CRC do conteúdo contido em "buffer". Os dois últimos 
   // bytes desse buffer contém o valor de CRC

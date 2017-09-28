@@ -38,12 +38,12 @@ void ARQ::envia(char * buffer, int bytes) {
     bool teste = true;
     while (teste) {
         int bytes_enq;
-        memset(buffer, '\0', sizeof (buffer));
+        memset(buffer, '\0', e.num_bytes);
 
-        bytes_enq = enquadra.recebe(buffer);
+        bytes_enq = enquadra.recebe(buffer,5000);
         if (bytes_enq == 0) {
             e.tipo = Timeout;
-        }else{
+        } else {
             e.tipo = Payload;
         }
         // e.num_bytes = bytes_enq;
@@ -72,10 +72,10 @@ int ARQ::recebe(char * buffer) {
     }
 
     while (true) {
-        bytes_enq = enquadra.recebe(buffer);
-        if (bytes_enq==0){
-           e.tipo = Timeout;
-        }else{
+        bytes_enq = enquadra.recebe(buffer,5000);
+        if (bytes_enq == 0) {
+            e.tipo = Timeout;
+        } else {
             e.tipo = Quadro;
             e.ptr = buffer;
             e.num_bytes = bytes_enq;
@@ -87,7 +87,7 @@ int ARQ::recebe(char * buffer) {
             return bytes_enq;
         }
         return 0;
-        
+
     }
 }
 
@@ -97,6 +97,7 @@ int ARQ::recebe(char * buffer) {
 //0x01 = mensagem/sequencia um
 //0x02 = ack/sequencia zero
 //0x03 =  ack/sequencia um
+
 bool ARQ::handle(Evento e) {
     //Enquadramento enquadra(porta, max_bytes);
 
@@ -124,11 +125,11 @@ bool ARQ::handle(Evento e) {
                     }
                 }
                 return false;
-            }else if (e.tipo== Timeout){
+            } else if (e.tipo == Timeout) {
                 return false;
             }
-            
-            
+
+
             break;
 
         case EST1: // estado 1
@@ -142,7 +143,7 @@ bool ARQ::handle(Evento e) {
                     } else {
                         cout << "REENVIANDO POR ACK ERRADO" << endl;
                         e.num_bytes++;
-                        memset(e.ptr, '\0', sizeof (e.ptr));
+                        memset(e.ptr, '\0', e.num_bytes);
                         memcpy(e.ptr, buffer_reenvio, e.num_bytes);
                         enquadra.envia(e.ptr, e.num_bytes);
                         estado = EST3;
@@ -197,36 +198,71 @@ bool ARQ::handle(Evento e) {
             }
 
             break;
-            
-             case EST2:
-                 
-                 
-                 estado = EST0;
-                 handle(e);
-                 
-             break;  
 
-            case EST3:
-                 estado = EST1;
-                 handle(e);
-             break;
+        case EST2:
+            estado = EST0;
+           
+            if (e.tipo == Quadro) {
+                // RESPONDER ACK COM NUMERO DE SEQUENCIA RECEBIDO
+
+                if (!AckOuMensagem(e.ptr[0])) {//verifica se é quadro de mensagem
+
+                    if (M == returnNumSeq(e.ptr[0])) {
+                        criaACK(e.ptr[0]);
+                        enquadra.envia(buff, 1);
+                        return false;
+                    } else {
+                        criaACK(e.ptr[0]);
+                        enquadra.envia(buff, 1);
+                        M = returnNumSeq(e.ptr[0]);
+                        return true;
+                    }
+                }
+            }
+
+
+
+
+            break;
+
+        case EST3:
+            estado = EST1;
+          
+            if (e.tipo == Quadro) {
+                // RESPONDER ACK COM NUMERO DE SEQUENCIA RECEBIDO
+
+                if (!AckOuMensagem(e.ptr[0])) {//verifica se é quadro de mensagem
+
+                    if (M == returnNumSeq(e.ptr[0])) {
+                        criaACK(e.ptr[0]);
+                        enquadra.envia(buff, 1);
+                        return false;
+                    } else {
+                        criaACK(e.ptr[0]);
+                        enquadra.envia(buff, 1);
+                        M = returnNumSeq(e.ptr[0]);
+                        return true;
+                    }
+                }
+            }
+            break;
     }
 }
 
 void ARQ::retiraCabecalho(char * buffer, int bytes) {
     //memset(buffer_arq, '\0', bytes);
 
-    memcpy(buffer, buffer+1, bytes-1);
-    
-    /*for (int i = 0; i < bytes - 1; i++) {
+    //memcpy(buffer, buffer+1, bytes);
+
+    for (int i = 0; i < bytes - 1; i++) {
         buffer_arq[i] = buffer[i + 1];
     }
 
-    memcpy(buffer, buffer_arq, bytes - 1);*/
+    memcpy(buffer, buffer_arq, bytes - 1);
 }
 
 void ARQ::mudaPayload(char * buffer, int bytes, bool N) {
-    memset(buffer_arq, '\0', sizeof (buffer_arq));
+    //memset(buffer_arq, '\0', sizeof (buffer_arq));
     if (N == 0) {
         buffer_arq[0] = 0x00;
     } else {
@@ -241,7 +277,7 @@ void ARQ::mudaPayload(char * buffer, int bytes, bool N) {
 }
 
 void ARQ::criaACK(char byte) {
-    memset(buff, '\0', sizeof (buff));
+    //  memset(buff, '\0', sizeof (buff));
 
     if (returnNumSeq(byte)) {
         buff[0] = 0x03;
