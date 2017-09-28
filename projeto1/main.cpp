@@ -29,7 +29,7 @@ void dump(char * buffer, int len) {
 
 int main(int argc, char* argv[]) {
     Serial dev("/dev/ttyUSB0", B9600);
-
+    
     Enquadramento enq(dev, 255);
     ARQ arq(enq, 8);
     Protocolo proto(arq);

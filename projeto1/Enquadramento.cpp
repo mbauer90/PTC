@@ -21,7 +21,6 @@ Enquadramento::Enquadramento(Serial & dev, int bytes_max) : porta(dev) {
     //min_bytes = bytes_min;
     max_bytes = bytes_max;
     estado = Ocioso;
-
 }
 
 void Enquadramento::envia(char * buffer, int bytes) {

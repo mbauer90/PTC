@@ -33,6 +33,13 @@ private:
         int num_bytes;
     };
     
+    struct S_Quadro {
+        char * q_ptr;
+        int q_len;
+    };
+    
+    std::queue<S_Quadro> recebido;
+    
     bool handle(Evento e);
     void mudaPayload(char * buffer, int bytes, bool N); 
     void retiraCabecalho(char * buffer,int bytes);
