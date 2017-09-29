@@ -82,8 +82,8 @@ char Enquadramento::recv_byte(int tout_ms) {
 int Enquadramento::recebe(char * buffer, int tout) {
     char byte;
     timeout_bytes = false;
-    timeout_ms = tout * 1000;
-    int tam_byte;
+    //timeout_ms = tout * 1000;
+    //int tam_byte;
 
     try {
         byte = recv_byte(tout * 1000);
@@ -96,6 +96,7 @@ int Enquadramento::recebe(char * buffer, int tout) {
         try {
             byte = recv_byte(1000);
         } catch (...) {
+            cout << "Timeout por Bytes" << endl;
             return 0; // timeout
         }
         if (handle(byte)) {
