@@ -86,7 +86,7 @@ int Enquadramento::recebe(char * buffer, int tout) {
     //int tam_byte;
 
     try {
-        byte = recv_byte(tout * 1000);
+        byte = recv_byte(tout);
         handle(byte);
     } catch (...) {
         return 0; // timeout

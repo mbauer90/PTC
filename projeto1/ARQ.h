@@ -24,6 +24,7 @@ private:
     int estado; // estado atual da MEF
     int min_bytes; // tamanhos mínimo e máximo de quadro
     bool N,M;
+    int time_backoff;
     Enquadramento & enquadra;
       
     struct Evento{
@@ -38,7 +39,7 @@ private:
         int q_len;
     };
     
-    std::queue<S_Quadro> recebido;
+    std::queue<S_Quadro *> recebido;
     
     bool handle(Evento e);
     void mudaPayload(char * buffer, int bytes, bool N); 
