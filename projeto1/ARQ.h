@@ -48,6 +48,7 @@ private:
     bool returnNumSeq(char byte);
     void criaACK(char byte);
     void imprimeHexa(char * buffer, int len);
+    void faz_backoff();
 };
 
 #endif /* ARQ_H */

@@ -91,7 +91,7 @@ int ARQ::recebe(char * buffer) {
         e.tipo = Quadro;
         e.ptr = quad->q_ptr;
         e.num_bytes = quad->q_len;
-       // cout << "retira fila" << endl;
+        // cout << "retira fila" << endl;
         if (handle(e)) {
             retiraCabecalho(buffer, quad->q_len);
             quad->q_len--;
@@ -171,7 +171,7 @@ bool ARQ::handle(Evento e) {
                         return true;
                     } else {
                         estado = EST3;
-                        time_backoff = 3000;
+                        time_backoff = 4000;
                         return false;
                     }
                     return false;
@@ -186,22 +186,8 @@ bool ARQ::handle(Evento e) {
                     qq->q_ptr = buf;
                     qq->q_len = e.num_bytes;
 
-                    //if (recebido.empty()) {
                     cout << "Enfileirou" << endl;
                     recebido.push(qq);
-                    //  } else {
-
-                    //     if (std::string(recebido.front()->q_ptr,recebido.front()->q_len) == std::string(qq->q_ptr,qq->q_len ) ){
-                    //         cout << "IGUAIS" << endl;
-
-                    //    } else {
-                    //        cout << "ESCREVEU NA FILA SEGUNDO" << endl;
-                    //       recebido.push(qq);
-                    //    }
-
-
-                    // }
-
 
                     criaACK(e.ptr[0]);
                     enquadra.envia(buff, 1);
@@ -213,7 +199,7 @@ bool ARQ::handle(Evento e) {
 
             } else if (e.tipo == Timeout) {
                 estado = EST3;
-                time_backoff = 3000;
+                time_backoff = 1000;
                 return false;
 
             } else if (e.tipo == Quadro) {
@@ -238,57 +224,18 @@ bool ARQ::handle(Evento e) {
 
         case EST2:
             estado = EST0;
-            int bytes_receb;
-
-
-
-
-            struct timeval tv;
-            long int tInicio, tFim, tDecorrido;
-            tDecorrido = 0;
-            gettimeofday(&tv, NULL);
-            tInicio = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-
-            while (tDecorrido < time_backoff) {
-                char * buffer_backup;
-                buffer_backup = new char [4096];
-
-                S_Quadro *q;
-                q = new S_Quadro;
-
-                bytes_receb = enquadra.recebe(buffer_backup, time_backoff - tDecorrido);
-
-                gettimeofday(&tv, NULL);
-                tFim = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-                tDecorrido = tFim - tInicio;
-
-
-                if (bytes_receb > 0) {
-                    if (!AckOuMensagem(buffer_backup[0])) { // Caso receba dados quando esta esperando ack
-                        cout << "Buffer backup: ";
-                        imprimeHexa(buffer_backup, bytes_receb);
-
-                        q->q_ptr = buffer_backup;
-                        q->q_len = bytes_receb;
-                        cout << "COLOCOU NA FILA" << endl;
-                        //  cout << "Endereço fila:" << &q->q_ptr<<endl;
-                        recebido.push(q);
-
-                        //    imprimeHexa(recebido.front()->q_ptr,recebido.front()->q_len);
-
-                        criaACK(buffer_backup[0]);
-                        enquadra.envia(buff, 1);
-
-                    }
-                    //return false;
-                }
-            }
+            faz_backoff();
 
             return false;
 
             break;
 
         case EST3:
+           // int bytes_receb;
+           // struct timeval tv;
+            //long int tInicio, tFim, tDecorrido;
+            faz_backoff();
+
             if (e.tipo == Payload) {
                 cout << "REENVIANDO POR ACK ERRADO" << endl;
                 e.num_bytes++;
@@ -305,24 +252,24 @@ bool ARQ::handle(Evento e) {
                 enquadra.envia(e.ptr, e.num_bytes);
                 estado = EST1;
                 return false;
-
-            } else if (e.tipo == Quadro) {
-                // RESPONDER ACK COM NUMERO DE SEQUENCIA RECEBIDO
-
-                if (!AckOuMensagem(e.ptr[0])) {//verifica se é quadro de mensagem
-
-                    if (M == returnNumSeq(e.ptr[0])) {
-                        criaACK(e.ptr[0]);
-                        enquadra.envia(buff, 1);
-                        return false;
-                    } else {
-                        criaACK(e.ptr[0]);
-                        enquadra.envia(buff, 1);
-                        M = returnNumSeq(e.ptr[0]);
-                        return true;
-                    }
-                }
             }
+            //            } else if (e.tipo == Quadro) {
+            //                // RESPONDER ACK COM NUMERO DE SEQUENCIA RECEBIDO
+            //
+            //                if (!AckOuMensagem(e.ptr[0])) {//verifica se é quadro de mensagem
+            //
+            //                    if (M == returnNumSeq(e.ptr[0])) {
+            //                        criaACK(e.ptr[0]);
+            //                        enquadra.envia(buff, 1);
+            //                        return false;
+            //                    } else {
+            //                        criaACK(e.ptr[0]);
+            //                        enquadra.envia(buff, 1);
+            //                        M = returnNumSeq(e.ptr[0]);
+            //                        return true;
+            //                    }
+            //                }
+            //            }
             break;
     }
 }
@@ -394,4 +341,48 @@ void ARQ::imprimeHexa(char * buffer, int len) {
         puts("");
         line++;
     }
+}
+
+void ARQ::faz_backoff(){
+            int bytes_receb;
+            struct timeval tv;
+            long int tInicio, tFim, tDecorrido;
+            tDecorrido = 0;
+            gettimeofday(&tv, NULL);
+            tInicio = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+
+            while (tDecorrido < time_backoff) {
+                char * buffer_backup;
+                buffer_backup = new char [4096];
+
+                S_Quadro *q;
+                q = new S_Quadro;
+
+                bytes_receb = enquadra.recebe(buffer_backup, time_backoff - tDecorrido);
+
+                gettimeofday(&tv, NULL);
+                tFim = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+                tDecorrido = tFim - tInicio;
+
+
+                if (bytes_receb > 0) {
+                    if (!AckOuMensagem(buffer_backup[0])) { // Caso receba dados quando esta esperando ack
+                        cout << "Buffer backup: ";
+                        imprimeHexa(buffer_backup, bytes_receb);
+
+                        q->q_ptr = buffer_backup;
+                        q->q_len = bytes_receb;
+                        cout << "COLOCOU NA FILA" << endl;
+                        //  cout << "Endereço fila:" << &q->q_ptr<<endl;
+                        recebido.push(q);
+
+                        //    imprimeHexa(recebido.front()->q_ptr,recebido.front()->q_len);
+
+                        criaACK(buffer_backup[0]);
+                        enquadra.envia(buff, 1);
+
+                    }
+                    //return false;
+                }
+            }
 }
