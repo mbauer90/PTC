@@ -71,28 +71,22 @@ int ARQ::recebe(char * buffer) {
 
         quad = recebido.front();
         recebido.pop();
-        imprimeHexa(quad->q_ptr, quad->q_len);
-        
-        quad = recebido.front();
-        recebido.pop();
-        imprimeHexa(quad->q_ptr, quad->q_len);
-        
-        quad = recebido.front();
-        recebido.pop();
-        imprimeHexa(quad->q_ptr, quad->q_len);
       
+ 
         
-        
-        cout<<"tamanho fila: "<<recebido.size()<<endl;
-        
-        buffer = quad->q_ptr;
+        //quad->q_ptr=buffer; 
+        memcpy(buffer, quad->q_ptr, quad->q_len);
         e.tipo = Quadro;
         e.ptr = quad->q_ptr;
-        e.num_bytes = quad->q_len;
+        e.num_bytes = quad->q_len; 
+        
+       // cout<<"imprime buffer:";
+      //  imprimeHexa(buffer, e.num_bytes );
  
         if (handle(e)) {
             retiraCabecalho(buffer, quad->q_len);
             quad->q_len--;
+          //  imprimeHexa(buffer, quad->q_len );
             return quad->q_len;
         }
 
@@ -255,10 +249,10 @@ bool ARQ::handle(Evento e) {
                             q->q_ptr = buffer_backup;
                             q->q_len = bytes_receb;
                             cout << "COLOCOU NA FILA"<<endl;
-                            cout << "Endereço fila:" << &q->q_ptr<<endl;
+                          //  cout << "Endereço fila:" << &q->q_ptr<<endl;
                             recebido.push(q);
                            
-                            imprimeHexa(recebido.front()->q_ptr,recebido.front()->q_len);
+                        //    imprimeHexa(recebido.front()->q_ptr,recebido.front()->q_len);
 
                             criaACK(buffer_backup[0]);
                             enquadra.envia(buff, 1);

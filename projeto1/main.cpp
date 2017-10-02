@@ -37,18 +37,21 @@ int main(int argc, char* argv[]) {
 
     if (argc == 2) {
         if (!strcmp(argv[1], "1")) {
-         
+         //   while (true){
                 cout << "Digite algo para enviar: " << endl;
                 cin >> quadro;
 
                 proto.envia(quadro, strlen(quadro));
-                
+        //    }
                 
                 int bytes = proto.recebe(quadro);
-  //              dump(quadro, bytes);
+                dump(quadro, bytes);
 
- //               bytes = proto.recebe(quadro);
-  //              dump(quadro, bytes);
+                bytes = proto.recebe(quadro);
+                dump(quadro, bytes);
+                
+                bytes = proto.recebe(quadro);
+                dump(quadro, bytes);
                 
 
             
