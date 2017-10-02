@@ -223,11 +223,9 @@ bool ARQ::handle(Evento e) {
         case EST2:
             estado = EST0;
             int bytes_receb;
+          
+        
 
-            char *buffer_backup;
-           // *buffer_backup++;
-            S_Quadro *q;
-            q= new S_Quadro;
             
             struct timeval tv;
             long int tInicio, tFim, tDecorrido;
@@ -236,6 +234,12 @@ bool ARQ::handle(Evento e) {
             tInicio = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 
             while (tDecorrido < time_backoff) {
+             char * buffer_backup;
+            buffer_backup= new char [4096];
+            
+             S_Quadro *q;
+             q= new S_Quadro;
+             
                 bytes_receb = enquadra.recebe(buffer_backup, time_backoff - tDecorrido);
 
                 gettimeofday(&tv, NULL);
@@ -251,6 +255,7 @@ bool ARQ::handle(Evento e) {
                             q->q_ptr = buffer_backup;
                             q->q_len = bytes_receb;
                             cout << "COLOCOU NA FILA"<<endl;
+                            cout << "Endereço fila:" << &q->q_ptr<<endl;
                             recebido.push(q);
                            
                             imprimeHexa(recebido.front()->q_ptr,recebido.front()->q_len);
