@@ -53,15 +53,15 @@ void ARQ::envia(char * buffer, int bytes) {
 
         //handle(e);
 
-           if (handle(e)) {
+        if (handle(e)) {
             teste = false;
-           }
+        }
 
-            if (handle(e)) {
-                teste = false;
-            }
+        if (handle(e)) {
+            teste = false;
+        }
 
-        
+
 
 
         //        for (int i = 0; i < 2; i++) {
@@ -81,7 +81,7 @@ int ARQ::recebe(char * buffer) {
     S_Quadro * quad;
     int bytes_enq;
 
-    if (!recebido.empty()) {
+    while (!recebido.empty()) {
 
         quad = recebido.front();
         recebido.pop();
@@ -91,37 +91,34 @@ int ARQ::recebe(char * buffer) {
         e.tipo = Quadro;
         e.ptr = quad->q_ptr;
         e.num_bytes = quad->q_len;
-        cout << "retira fila" << endl;
+       // cout << "retira fila" << endl;
         if (handle(e)) {
             retiraCabecalho(buffer, quad->q_len);
             quad->q_len--;
 
             return quad->q_len;
         }
+    }
+    //  cout << "CHEGOU4" << endl;
+    while (true) {
+        bytes_enq = enquadra.recebe(buffer, 5000);
+        if (bytes_enq == 0) {
+            e.tipo = Timeout;
+        } else {
+            e.tipo = Quadro;
+            e.ptr = buffer;
+            e.num_bytes = bytes_enq;
+        }
 
+        if (handle(e)) {
+            retiraCabecalho(buffer, bytes_enq);
+            bytes_enq--;
+            return bytes_enq;
+        }
         return 0;
 
-    } else {
-        //  cout << "CHEGOU4" << endl;
-        while (true) {
-            bytes_enq = enquadra.recebe(buffer, 5000);
-            if (bytes_enq == 0) {
-                e.tipo = Timeout;
-            } else {
-                e.tipo = Quadro;
-                e.ptr = buffer;
-                e.num_bytes = bytes_enq;
-            }
-
-            if (handle(e)) {
-                retiraCabecalho(buffer, bytes_enq);
-                bytes_enq--;
-                return bytes_enq;
-            }
-            return 0;
-
-        }
     }
+
 }
 
 // primeiro bit = tipo de quadro - 0 mensagem / 1 ack
@@ -188,14 +185,29 @@ bool ARQ::handle(Evento e) {
 
                     qq->q_ptr = buf;
                     qq->q_len = e.num_bytes;
-                    cout << "ESCREVEU NA FILA QQ" << endl;
+
+                    //if (recebido.empty()) {
+                    cout << "Enfileirou" << endl;
                     recebido.push(qq);
+                    //  } else {
+
+                    //     if (std::string(recebido.front()->q_ptr,recebido.front()->q_len) == std::string(qq->q_ptr,qq->q_len ) ){
+                    //         cout << "IGUAIS" << endl;
+
+                    //    } else {
+                    //        cout << "ESCREVEU NA FILA SEGUNDO" << endl;
+                    //       recebido.push(qq);
+                    //    }
+
+
+                    // }
+
 
                     criaACK(e.ptr[0]);
                     enquadra.envia(buff, 1);
                     //  M = returnNumSeq(e.ptr[0]);
 
-                    return false;//TESTE
+                    return false;
                 }
                 return false;
 

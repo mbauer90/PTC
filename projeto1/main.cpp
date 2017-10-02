@@ -43,15 +43,19 @@ int main(int argc, char* argv[]) {
 
                 proto.envia(quadro, strlen(quadro));
           //  }
+                cout << "Digite algo para enviar: " << endl;
+                cin >> quadro;
+
+                proto.envia(quadro, strlen(quadro));
                 
                int bytes = proto.recebe(quadro);
                 dump(quadro, bytes);
 
-//                bytes = proto.recebe(quadro);
-//                dump(quadro, bytes);
+                bytes = proto.recebe(quadro);
+                dump(quadro, bytes);
 //                
-//                bytes = proto.recebe(quadro);
-//                dump(quadro, bytes);
+                bytes = proto.recebe(quadro);
+                dump(quadro, bytes);
                 
 
             
