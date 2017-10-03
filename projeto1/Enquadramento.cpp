@@ -34,25 +34,39 @@ void Enquadramento::envia(char * buffer, int bytes) {
     gen_crc(buffer, bytes);
     //buffer[1] = 0x42;
     bytes = bytes + 2;
-
+    
+    char back[4096];
+    
     squadro = c;
-
+    back[0]=c;
+    int j=1;
     for (int i = 0; i < bytes; i++) {
         if ((buffer[i] == 0x7e) | (buffer[i] == 0x7d)) {
             e = (buffer[i] xor 0x20);
-            squadro = squadro + d + e;
+            back[i+j]=d;
+            j++;   
+            back[i+j]=e;        
+            
+                    
+           // squadro = squadro + d + e;
+            
         } else {
-            squadro = squadro + buffer[i];
+           // squadro = squadro + buffer[i];
+            back[i+j] = buffer[i];
         }
 
     }
-
-    squadro = squadro + c;
+    back[bytes+j]=c;
+    //squadro = squadro + c;
     //cout << squadro << endl;
 
     //WRITE IN SERIAL
-    for (char & c : squadro) {
-        porta.write(&c, 1);
+//    for (char & c : squadro) {
+//        porta.write(&c, 1);
+//    }
+    for (int i=0;i<bytes+j+1;i++) {
+        //cout<<back[i];
+        porta.write(&back[i], 1);
     }
 }
 
