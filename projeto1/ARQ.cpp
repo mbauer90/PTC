@@ -5,8 +5,13 @@
 #include "ARQ.h"
 #include <sys/time.h>
 
+#define MAX 6000
+#define MIN 2000
+#define TIME_QUAD 5000
 
 using namespace std;
+
+
 
 ARQ::ARQ(Enquadramento & enq, int bytes_min) : enquadra(enq) {
     N = 0;
@@ -42,7 +47,7 @@ void ARQ::envia(char * buffer, int bytes) {
         int bytes_enq;
         memset(buffer, '\0', e.num_bytes);
 
-        bytes_enq = enquadra.recebe(buffer, 5000);
+        bytes_enq = enquadra.recebe(buffer, TIME_QUAD);
         if (bytes_enq == 0) {
             e.tipo = Timeout;
         } else {
@@ -101,7 +106,7 @@ int ARQ::recebe(char * buffer) {
     }
     //  cout << "CHEGOU4" << endl;
     while (true) {
-        bytes_enq = enquadra.recebe(buffer, 5000);
+        bytes_enq = enquadra.recebe(buffer, TIME_QUAD);
         if (bytes_enq == 0) {
             e.tipo = Timeout;
         } else {
@@ -167,11 +172,13 @@ bool ARQ::handle(Evento e) {
                         estado = EST2;
                         //estado = EST0;
 
-                        time_backoff = 10000; // ALTERAR ESSES TIME_BACKOFF
+                        time_backoff = MAX; // ALTERAR ESSES TIME_BACKOFF
+                        cout<<"TIMEBACKOFF: "<<time_backoff<<endl;
                         return true;
                     } else {
                         estado = EST3;
-                        time_backoff = 4000;
+                        time_backoff = rand()%(MAX - MIN +1)+MIN;
+                        cout<<"TIMEBACKOFF: "<<time_backoff<<endl;
                         return false;
                     }
                     return false;
@@ -186,7 +193,7 @@ bool ARQ::handle(Evento e) {
                     qq->q_ptr = buf;
                     qq->q_len = e.num_bytes;
 
-                    cout << "Enfileirou" << endl;
+                   // cout << "Enfileirou" << endl;
                     recebido.push(qq);
 
                     criaACK(e.ptr[0]);
@@ -199,7 +206,8 @@ bool ARQ::handle(Evento e) {
 
             } else if (e.tipo == Timeout) {
                 estado = EST3;
-                time_backoff = 1000;
+                time_backoff = rand()%(MAX - MIN +1)+MIN;
+                cout<<"TIMEBACKOFF: "<<time_backoff<<endl;
                 return false;
 
             } else if (e.tipo == Quadro) {
@@ -367,8 +375,8 @@ void ARQ::faz_backoff(){
 
                 if (bytes_receb > 0) {
                     if (!AckOuMensagem(buffer_backup[0])) { // Caso receba dados quando esta esperando ack
-                        cout << "Buffer backup: ";
-                        imprimeHexa(buffer_backup, bytes_receb);
+                       // cout << "Buffer backup: ";
+                      //  imprimeHexa(buffer_backup, bytes_receb);
 
                         q->q_ptr = buffer_backup;
                         q->q_len = bytes_receb;
