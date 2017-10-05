@@ -257,7 +257,7 @@ bool ARQ::handle(Evento e) {
             if (e.tipo == Payload) {
                 cout << "REENVIANDO POR ACK ERRADO" << endl;
                 e.reenvio_bytes++;
-                memset(e.ptr, '\0', e.num_bytes);
+                memset(e.ptr, '\0', e.reenvio_bytes);
                 memcpy(e.ptr, buffer_reenvio, e.reenvio_bytes);
                 enquadra.envia(e.ptr, e.reenvio_bytes);
                 estado = EST1;
