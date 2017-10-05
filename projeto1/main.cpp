@@ -29,7 +29,7 @@ void dump(char * buffer, int len) {
 
 int main(int argc, char* argv[]) {
     Serial dev("/dev/ttyUSB0", B9600);
-    
+
     Enquadramento enq(dev, 255);
     ARQ arq(enq, 8);
     Protocolo proto(arq);
@@ -38,27 +38,21 @@ int main(int argc, char* argv[]) {
     if (argc == 2) {
         if (!strcmp(argv[1], "1")) {
             //while (true){
-                cout << "Digite algo para enviar: " << endl;
-                cin >> quadro;
+            cout << "Digite algo para enviar: " << endl;
+            cin >> quadro;
 
-                proto.envia(quadro, strlen(quadro));
-          //  }
-                cout << "Digite algo para enviar: " << endl;
-                cin >> quadro;
+            proto.envia(quadro, strlen(quadro));
+            //  }
+            cout << "Digite algo para enviar: " << endl;
+            cin >> quadro;
 
-                proto.envia(quadro, strlen(quadro));
-                
-               int bytes = proto.recebe(quadro);
-                dump(quadro, bytes);
+            proto.envia(quadro, strlen(quadro));
 
+            int bytes;
+            while(true){
                 bytes = proto.recebe(quadro);
                 dump(quadro, bytes);
-//                
-                bytes = proto.recebe(quadro);
-                dump(quadro, bytes);
-                
-
-            
+            }
         } else {
             //            int bytes=1;
             //	    while(bytes>0){
