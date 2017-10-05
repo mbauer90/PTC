@@ -11,8 +11,6 @@
 
 using namespace std;
 
-
-
 ARQ::ARQ(Enquadramento & enq, int bytes_min) : enquadra(enq) {
     N = 0;
     M = 1;
@@ -39,7 +37,7 @@ void ARQ::envia(char * buffer, int bytes) {
     e.tipo = Payload;
     e.ptr = buffer;
     e.num_bytes = bytes;
-    e.reenvio_bytes=bytes;
+    e.reenvio_bytes = bytes;
 
     handle(e);
 
@@ -49,7 +47,7 @@ void ARQ::envia(char * buffer, int bytes) {
         memset(buffer, '\0', e.num_bytes);
 
         bytes_enq = enquadra.recebe(buffer, TIME_QUAD);
-        
+
         //e.num_bytes = bytes_enq;
         if (bytes_enq == 0) {
             e.tipo = Timeout;
@@ -60,7 +58,7 @@ void ARQ::envia(char * buffer, int bytes) {
         e.ptr = buffer;
 
         //handle(e);
-        
+
         if (handle(e)) {
             teste = false;
         }
@@ -95,9 +93,9 @@ int ARQ::recebe(char * buffer) {
         recebido.pop();
 
         memcpy(buffer, quad->q_ptr, quad->q_len);
-       // cout<<"estou aqui: ";
+        // cout<<"estou aqui: ";
         //imprimeHexa(quad->q_ptr,10);
-       // cout<<"Quad LEN:"<<quad->q_len<<endl;
+        // cout<<"Quad LEN:"<<quad->q_len<<endl;
         e.tipo = Quadro;
         e.ptr = quad->q_ptr;
         e.num_bytes = quad->q_len;
@@ -153,12 +151,12 @@ bool ARQ::handle(Evento e) {
                     if (M == returnNumSeq(e.ptr[0])) {
 
                         criaACK(e.ptr[0]);
-                        cout<<"Enviou ACK"<<returnNumSeq(e.ptr[0])<<endl;
+                        cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
                         enquadra.envia(buff, 1);
                         return false;
                     } else {
                         criaACK(e.ptr[0]);
-                        cout<<"Enviou ACK"<<returnNumSeq(e.ptr[0])<<endl;
+                        cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
                         enquadra.envia(buff, 1);
                         M = returnNumSeq(e.ptr[0]);
                         return true;
@@ -180,12 +178,12 @@ bool ARQ::handle(Evento e) {
                         //estado = EST0;
 
                         time_backoff = MAX; // ALTERAR ESSES TIME_BACKOFF
-                        cout<<"TIMEBACKOFF: "<<time_backoff<<endl;
+                        cout << "TIMEBACKOFF: " << time_backoff << endl;
                         return true;
                     } else {
                         estado = EST3;
-                        time_backoff = rand()%(MAX - MIN +1)+MIN;
-                        cout<<"TIMEBACKOFF: "<<time_backoff<<endl;
+                        time_backoff = rand() % (MAX - MIN + 1) + MIN;
+                        cout << "TIMEBACKOFF: " << time_backoff << endl;
                         return false;
                     }
                     return false;
@@ -200,13 +198,14 @@ bool ARQ::handle(Evento e) {
                     qq->q_ptr = buf;
                     qq->q_len = e.num_bytes;
 
-                   // cout << "Enfileirou" << endl;
+                    // cout << "Enfileirou" << endl;
                     recebido.push(qq);
 
                     criaACK(e.ptr[0]);
-                    cout<<"Enviou ACK"<<returnNumSeq(e.ptr[0])<<endl;
+                    cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
                     enquadra.envia(buff, 1);
                     //  M = returnNumSeq(e.ptr[0]);
+                    estado = EST4;
 
                     return false;
                 }
@@ -214,8 +213,8 @@ bool ARQ::handle(Evento e) {
 
             } else if (e.tipo == Timeout) {
                 estado = EST3;
-                time_backoff = rand()%(MAX - MIN +1)+MIN;
-                cout<<"TIMEBACKOFF: "<<time_backoff<<endl;
+                time_backoff = rand() % (MAX - MIN + 1) + MIN;
+                cout << "TIMEBACKOFF: " << time_backoff << endl;
                 return false;
 
             } else if (e.tipo == Quadro) {
@@ -225,12 +224,12 @@ bool ARQ::handle(Evento e) {
 
                     if (M == returnNumSeq(e.ptr[0])) {
                         criaACK(e.ptr[0]);
-                        cout<<"Enviou ACK"<<returnNumSeq(e.ptr[0])<<endl;
+                        cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
                         enquadra.envia(buff, 1);
                         return false;
                     } else {
                         criaACK(e.ptr[0]);
-                        cout<<"Enviou ACK"<<returnNumSeq(e.ptr[0])<<endl;
+                        cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
                         enquadra.envia(buff, 1);
                         M = returnNumSeq(e.ptr[0]);
                         return true;
@@ -249,8 +248,8 @@ bool ARQ::handle(Evento e) {
             break;
 
         case EST3:
-           // int bytes_receb;
-           // struct timeval tv;
+            // int bytes_receb;
+            // struct timeval tv;
             //long int tInicio, tFim, tDecorrido;
             faz_backoff();
 
@@ -289,6 +288,13 @@ bool ARQ::handle(Evento e) {
             //                }
             //            }
             break;
+
+        case EST4: //UTILIZADO APENAS PARA NÃO ESCREVER DUAS VEZES NA FILA, NO CASO DE RECEBER MENSAGEM QUANDO ESPERA POR ACK
+            estado = EST1;
+            return false;
+
+            break;
+
     }
 }
 
@@ -361,47 +367,47 @@ void ARQ::imprimeHexa(char * buffer, int len) {
     }
 }
 
-void ARQ::faz_backoff(){
-            int bytes_receb;
-            struct timeval tv;
-            long int tInicio, tFim, tDecorrido;
-            tDecorrido = 0;
-            gettimeofday(&tv, NULL);
-            tInicio = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+void ARQ::faz_backoff() {
+    int bytes_receb;
+    struct timeval tv;
+    long int tInicio, tFim, tDecorrido;
+    tDecorrido = 0;
+    gettimeofday(&tv, NULL);
+    tInicio = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 
-            while (tDecorrido < time_backoff) {
-                char * buffer_backup;
-                buffer_backup = new char [4096];
+    while (tDecorrido < time_backoff) {
+        char * buffer_backup;
+        buffer_backup = new char [4096];
 
-                S_Quadro *q;
-                q = new S_Quadro;
+        S_Quadro *q;
+        q = new S_Quadro;
 
-                bytes_receb = enquadra.recebe(buffer_backup, time_backoff - tDecorrido);
+        bytes_receb = enquadra.recebe(buffer_backup, time_backoff - tDecorrido);
 
-                gettimeofday(&tv, NULL);
-                tFim = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-                tDecorrido = tFim - tInicio;
+        gettimeofday(&tv, NULL);
+        tFim = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+        tDecorrido = tFim - tInicio;
 
 
-                if (bytes_receb > 0) {
-                    if (!AckOuMensagem(buffer_backup[0])) { // Caso receba dados quando esta esperando ack
-                       // cout << "Buffer backup: ";
-                      //  imprimeHexa(buffer_backup, bytes_receb);
+        if (bytes_receb > 0) {
+            if (!AckOuMensagem(buffer_backup[0])) { // Caso receba dados quando esta esperando ack
+                // cout << "Buffer backup: ";
+                //  imprimeHexa(buffer_backup, bytes_receb);
 
-                        q->q_ptr = buffer_backup;
-                        q->q_len = bytes_receb;
-                        cout << "COLOCOU NA FILA" << endl;
-                        //  cout << "Endereço fila:" << &q->q_ptr<<endl;
-                        recebido.push(q);
+                q->q_ptr = buffer_backup;
+                q->q_len = bytes_receb;
+                cout << "COLOCOU NA FILA" << endl;
+                //  cout << "Endereço fila:" << &q->q_ptr<<endl;
+                recebido.push(q);
 
-                        //    imprimeHexa(recebido.front()->q_ptr,recebido.front()->q_len);
+                //    imprimeHexa(recebido.front()->q_ptr,recebido.front()->q_len);
 
-                        criaACK(buffer_backup[0]);
-                        cout<<"Enviou ACK"<<returnNumSeq(buffer_backup[0])<<endl;
-                        enquadra.envia(buff, 1);
+                criaACK(buffer_backup[0]);
+                cout << "Enviou ACK" << returnNumSeq(buffer_backup[0]) << endl;
+                enquadra.envia(buff, 1);
 
-                    }
-                    //return false;
-                }
             }
+            //return false;
+        }
+    }
 }
