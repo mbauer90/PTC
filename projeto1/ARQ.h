@@ -30,8 +30,8 @@ private:
     struct Evento{
         TipoEvento tipo;
         char * ptr;
-        char * quadro_recebido;
         int num_bytes;
+        int reenvio_bytes;
     };
     
     struct S_Quadro {
