@@ -100,6 +100,7 @@ int ARQ::recebe(char * buffer) {
         e.ptr = quad->q_ptr;
         e.num_bytes = quad->q_len;
         // cout << "retira fila" << endl;
+        transmite_ack = false;
         if (handle(e)) {
             retiraCabecalho(buffer, quad->q_len);
             quad->q_len--;
@@ -109,6 +110,7 @@ int ARQ::recebe(char * buffer) {
     }
     //  cout << "CHEGOU4" << endl;
     while (true) {
+        transmite_ack = true;
         bytes_enq = enquadra.recebe(buffer, TIME_QUAD);
         if (bytes_enq == 0) {
             e.tipo = Timeout;
@@ -149,16 +151,21 @@ bool ARQ::handle(Evento e) {
                 // RESPONDER ACK COM NUMERO DE SEQUENCIA RECEBIDO
                 if (!AckOuMensagem(e.ptr[0])) {//verifica se é quadro de mensagem
                     if (M == returnNumSeq(e.ptr[0])) {
+                        if (transmite_ack) {
+                            criaACK(e.ptr[0]);
+                            cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
+                            enquadra.envia(buff, 1);
+                        }
 
-                        criaACK(e.ptr[0]);
-                        cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
-                        enquadra.envia(buff, 1);
                         return false;
                     } else {
-                        criaACK(e.ptr[0]);
-                        cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
-                        enquadra.envia(buff, 1);
+                        if (transmite_ack) {
+                            criaACK(e.ptr[0]);
+                            cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
+                            enquadra.envia(buff, 1);
+                        }
                         M = returnNumSeq(e.ptr[0]);
+
                         return true;
                     }
                 }
@@ -223,15 +230,20 @@ bool ARQ::handle(Evento e) {
                 if (!AckOuMensagem(e.ptr[0])) {//verifica se é quadro de mensagem
 
                     if (M == returnNumSeq(e.ptr[0])) {
-                        criaACK(e.ptr[0]);
-                        cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
-                        enquadra.envia(buff, 1);
+                        if (transmite_ack) {
+                            criaACK(e.ptr[0]);
+                            cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
+                            enquadra.envia(buff, 1);
+                        }
                         return false;
                     } else {
-                        criaACK(e.ptr[0]);
-                        cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
-                        enquadra.envia(buff, 1);
+                        if (transmite_ack) {
+                            criaACK(e.ptr[0]);
+                            cout << "Enviou ACK" << returnNumSeq(e.ptr[0]) << endl;
+                            enquadra.envia(buff, 1);
+                        }
                         M = returnNumSeq(e.ptr[0]);
+
                         return true;
                     }
                 }

@@ -16,6 +16,7 @@ public:
     int recebe(char * buffer);
     
 private:
+    bool transmite_ack;
     char buff[10];
     char buffer_arq[4096]; // quadros no maximo de 4 kB (hardcoded)
     char buffer_reenvio[4096]; // quadros no maximo de 4 kB (hardcoded)
