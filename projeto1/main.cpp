@@ -30,12 +30,16 @@ void dump(char * buffer, int len) {
 int main(int argc, char* argv[]) {
     Serial dev("/dev/ttyUSB0", B9600);
 
+    if(argc == 3){
+        Serial dev(argv[2], B9600);
+    }
+    
     Enquadramento enq(dev, 255);
     ARQ arq(enq, 8);
     Protocolo proto(arq);
     char quadro[400];
 
-    if (argc == 2) {
+    if (argc > 1) {
         if (!strcmp(argv[1], "1")) {
             //while (true){
             cout << "Digite algo para enviar: " << endl;
@@ -53,7 +57,7 @@ int main(int argc, char* argv[]) {
                 bytes = proto.recebe(quadro);
                 dump(quadro, bytes);
             }
-        } else {
+        } else if (!strcmp(argv[1], "2")){
             //            int bytes=1;
             //	    while(bytes>0){
             //		 bytes = proto.recebe(quadro);
@@ -64,6 +68,10 @@ int main(int argc, char* argv[]) {
                 int bytes = proto.recebe(quadro);
                 dump(quadro, bytes);
             }
+        } else{
+            cout << "Parmetros invalidos" << endl;
+            cout << "Primeiro parametro 1 para enviar ou 2 para receber" << endl;
+            cout << "Segundo parametro porta Serial" << endl;
         }
     } else {
         cout << "Passe como argumento 1 para enviar ou 2 para receber" << endl;
