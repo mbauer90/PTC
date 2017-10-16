@@ -40,16 +40,13 @@ int main(int argc, char* argv[]) {
     char quadro[400];
 
     if (argc > 1) {
-        if (!strcmp(argv[1], "1")) {
-            //while (true){
+        if (!strcmp(argv[1], "3")) {
             cout << "Digite algo para enviar: " << endl;
             cin >> quadro;
-
             proto.envia(quadro, strlen(quadro));
-            //  }
+
             cout << "Digite algo para enviar: " << endl;
             cin >> quadro;
-
             proto.envia(quadro, strlen(quadro));
 
             int bytes;
@@ -58,22 +55,29 @@ int main(int argc, char* argv[]) {
                 dump(quadro, bytes);
             }
         } else if (!strcmp(argv[1], "2")){
-            //            int bytes=1;
-            //	    while(bytes>0){
-            //		 bytes = proto.recebe(quadro);
-            //		dump(quadro, bytes);
-            //	    }
 
             while (true) {
                 int bytes = proto.recebe(quadro);
                 dump(quadro, bytes);
             }
-        } else{
-            cout << "Parmetros invalidos" << endl;
-            cout << "Primeiro parametro 1 para enviar ou 2 para receber" << endl;
-            cout << "Segundo parametro porta Serial" << endl;
+            
+            
+        }else if (!strcmp(argv[1], "1")){
+         while (true){
+            cout << "Digite algo para enviar: " << endl;
+            cin >> quadro;
+
+            proto.envia(quadro, strlen(quadro));
+              }
+        
+        }
+        
+        else{
+            cout << "PARÂMETROS INVÁLIDOS!" << endl;
+            cout << "PRIMEIRO PARÂMETRO:"<<endl<< " 1 para enviar"<<endl<< " 2 para receber"<<endl<< " 3 para envio seguido de recepção (teste de fila)" << endl;
+            cout << "SEGUNDO PARÂMETRO: porta Serial" << endl;
         }
     } else {
-        cout << "Passe como argumento 1 para enviar ou 2 para receber" << endl;
+        cout << "Passe como argumento:"<<endl<< " 1 para enviar"<<endl<< " 2 para receber"<<endl<< " 3 para enviar e depois permanecer recebendo (teste de fila)" << endl;
     }
 }
